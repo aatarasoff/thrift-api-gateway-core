@@ -24,7 +24,7 @@ public class MessageTransalator {
         this.authTokenExchanger = authTokenExchanger;
     }
 
-    public byte[] process(byte[] thriftBody) throws TException, InstantiationException, IllegalAccessException {
+    public byte[] process(byte[] thriftBody) throws TException {
         TProtocol protocol = createProtocol(thriftBody);
 
         int startPosition = findStartPosition(protocol);
@@ -48,7 +48,7 @@ public class MessageTransalator {
         return protocolFactory.getProtocol(new TMemoryInputTransport(thriftBody));
     }
 
-    private TBase extractAuthToken(TProtocol protocol, TBase authToken) throws TException, IllegalAccessException, InstantiationException {
+    private TBase extractAuthToken(TProtocol protocol, TBase authToken) throws TException {
         authToken.read(protocol);
         return authToken;
     }

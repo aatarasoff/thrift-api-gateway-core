@@ -4,6 +4,7 @@ buildscript {
     }
     dependencies {
         classpath 'co.tomlee.gradle.plugins:gradle-thrift-plugin:+'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.1'
     }
 }
 
@@ -13,6 +14,8 @@ version '0.0.1'
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'thrift'
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
 
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
@@ -61,3 +64,29 @@ sourceSets {
 idea.module.excludeDirs = []
 idea.module.testSourceDirs += file('generated-src/thrift')
 idea.module.generatedSourceDirs += file('generated-src/thrift')
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            artifact sourceJar {
+                classifier "sources"
+            }
+        }
+    }
+}
+
+bintray {
+    user = System.properties['BINTRAY_USER']
+    key = System.properties['BINTRAY_KEY']
+    publications = ['mavenJava']
+    pkg {
+        repo = 'maven'
+        name = 'thrift-api-gateway-core'
+    }
+}
