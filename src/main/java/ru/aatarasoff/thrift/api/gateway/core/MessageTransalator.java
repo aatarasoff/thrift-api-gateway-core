@@ -17,11 +17,11 @@ public class MessageTransalator {
     private static final byte[] COLON = new byte[]{(byte)58};
 
     private TProtocolFactory protocolFactory;
-    private AuthenticationDataExchanger authenticationDataExchanger;
+    private AuthTokenExchanger authTokenExchanger;
 
-    public MessageTransalator(TProtocolFactory protocolFactory, AuthenticationDataExchanger authenticationDataExchanger) {
+    public MessageTransalator(TProtocolFactory protocolFactory, AuthTokenExchanger authTokenExchanger) {
         this.protocolFactory = protocolFactory;
-        this.authenticationDataExchanger = authenticationDataExchanger;
+        this.authTokenExchanger = authTokenExchanger;
     }
 
     public byte[] process(byte[] thriftBody) throws TException, InstantiationException, IllegalAccessException {
@@ -29,8 +29,8 @@ public class MessageTransalator {
 
         int startPosition = findStartPosition(protocol);
 
-        TBase userData = authenticationDataExchanger.process(
-                extractAuthenticationData(protocol, authenticationDataExchanger.getAuthenticationDataClass())
+        TBase userData = authTokenExchanger.process(
+                extractAuthToken(protocol, authTokenExchanger.createEmptyAuthToken())
         );
 
         int endPosition = findEndPosition(protocol);
@@ -44,6 +44,15 @@ public class MessageTransalator {
         );
     }
 
+    private TProtocol createProtocol(byte[] thriftBody) {
+        return protocolFactory.getProtocol(new TMemoryInputTransport(thriftBody));
+    }
+
+    private TBase extractAuthToken(TProtocol protocol, TBase authToken) throws TException, IllegalAccessException, InstantiationException {
+        authToken.read(protocol);
+        return authToken;
+    }
+
     private byte[] serializeUserData(TProtocolFactory protocolFactory, TBase userData) throws TException {
         TMemoryBufferWithLength memoryBuffer = new TMemoryBufferWithLength(1024);
 
@@ -55,16 +64,6 @@ public class MessageTransalator {
         userData.write(protocol);
 
         return Arrays.copyOf(memoryBuffer.getArray(), memoryBuffer.length());
-    }
-
-    private TProtocol createProtocol(byte[] thriftBody) {
-        return protocolFactory.getProtocol(new TMemoryInputTransport(thriftBody));
-    }
-
-    private TBase extractAuthenticationData(TProtocol protocol, Class<TBase> authenticationDataClass) throws TException, IllegalAccessException, InstantiationException {
-        TBase authData = authenticationDataClass.newInstance();
-        authData.read(protocol);
-        return authData;
     }
 
     private int findStartPosition(TProtocol protocol) throws TException {

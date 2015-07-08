@@ -15,7 +15,7 @@ import java.util.Arrays;
 /**
  * Created by aleksandr on 08.07.15.
  */
-public class ConverterTests {
+public class MessageTranslatorTests {
 
     @Test
     public void binary_test() throws TException, IllegalAccessException, InstantiationException {
@@ -39,7 +39,7 @@ public class ConverterTests {
                 = new ExternalTestService.Client(protocolFactory.getProtocol(externalServiceBuffer));
 
         externalServiceClient.send_getSomeData(
-                new AuthenticationData().setToken("sometoken").setChecksum(128),
+                new AuthToken().setToken("sometoken").setChecksum(128),
                 new RequestData().setSomeStringField("somevalue").setSomeIntField(8)
         );
 
@@ -59,15 +59,15 @@ public class ConverterTests {
         Assert.assertTrue(
                 "Translated external message must be the same as internal message",
                 Arrays.equals(
-                        new MessageTransalator(protocolFactory, new AuthenticationDataExchanger<AuthenticationData, UserData>() {
+                        new MessageTransalator(protocolFactory, new AuthTokenExchanger<AuthToken, UserData>() {
                             @Override
-                            public Class<AuthenticationData> getAuthenticationDataClass() {
-                                return AuthenticationData.class;
+                            public AuthToken createEmptyAuthToken() {
+                                return new AuthToken();
                             }
 
                             @Override
-                            public UserData process(AuthenticationData authenticationData) {
-                                if ("sometoken".equals(authenticationData.getToken())) {
+                            public UserData process(AuthToken authToken) {
+                                if ("sometoken".equals(authToken.getToken())) {
                                     return new UserData().setId("user1");
                                 }
 

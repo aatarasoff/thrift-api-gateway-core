@@ -6,7 +6,7 @@ exception SomeException {
 
 service ExternalTestService {
     SomeReturnData getSomeData(
-        1: AuthenticationData authData,
+        1: AuthToken authData,
         2: RequestData requestData
     ) throws (1: SomeException e);
 }
@@ -28,7 +28,7 @@ struct RequestData {
     2: i32 someIntField
 }
 
-struct AuthenticationData {
+struct AuthToken {
     1: string token,
     2: i32 checksum
 }
