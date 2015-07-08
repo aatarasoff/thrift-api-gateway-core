@@ -8,3 +8,6 @@ gradlew.bat
 
 .idea
 .gradle
+
+generated-src
+build
