@@ -3,7 +3,7 @@ package ru.aatarasoff.thrift.api.gateway.core;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
-import org.apache.thrift.TSerializer;
+import org.apache.thrift.protocol.TJSONProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TMemoryInputTransport;
@@ -14,6 +14,8 @@ import java.util.Arrays;
  * Created by aleksandr on 09.07.15.
  */
 public class MessageTransalator {
+    private static final byte[] COLON = new byte[]{(byte)58};
+
     private TProtocolFactory protocolFactory;
     private AuthenticationDataExchanger authenticationDataExchanger;
 
@@ -44,7 +46,13 @@ public class MessageTransalator {
 
     private byte[] serializeUserData(TProtocolFactory protocolFactory, TBase userData) throws TException {
         TMemoryBufferWithLength memoryBuffer = new TMemoryBufferWithLength(1024);
-        userData.write(protocolFactory.getProtocol(memoryBuffer));
+
+        TProtocol protocol = protocolFactory.getProtocol(memoryBuffer);
+
+        if (protocol instanceof TJSONProtocol) {
+            memoryBuffer.write(COLON, 0, 1);
+        }
+        userData.write(protocol);
 
         return Arrays.copyOf(memoryBuffer.getArray(), memoryBuffer.length());
     }
