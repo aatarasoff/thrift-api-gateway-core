@@ -37,10 +37,10 @@ public class MessageTransalator {
 
         return  ArrayUtils.addAll(
                 ArrayUtils.addAll(
-                        Arrays.copyOfRange(protocol.getTransport().getBuffer(), 0, startPosition),
+                        getSkippedPart(protocol, startPosition),
                         serializeUserData(protocolFactory, userData)
                 ),
-                Arrays.copyOfRange(protocol.getTransport().getBuffer(), endPosition, thriftBody.length)
+                getAfterTokenPart(protocol, endPosition, thriftBody.length)
         );
     }
 
@@ -84,5 +84,13 @@ public class MessageTransalator {
 
     private void skipMessageInfo(TProtocol protocol) throws TException {
         protocol.readMessageBegin();
+    }
+
+    private byte[] getAfterTokenPart(TProtocol protocol, int endPosition, int length) {
+        return Arrays.copyOfRange(protocol.getTransport().getBuffer(), endPosition, length);
+    }
+
+    private byte[] getSkippedPart(TProtocol protocol, int startPosition) {
+        return getAfterTokenPart(protocol, 0, startPosition);
     }
 }

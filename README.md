@@ -48,7 +48,7 @@ repositories {
 ```
 
 ```
-compile 'ru.aatarasoff.thrift:api-gateway-core:0.0.1'
+compile 'ru.aatarasoff.thrift:api-gateway-core:0.1.1'
 ```
 
 ## How use this
