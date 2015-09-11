@@ -29,11 +29,11 @@ service ExternalTestService {
     SomeReturnData getSomeData(
         1: AuthToken authData,
         2: RequestData requestData
-    ) throws (1: SomeException e);
+    ) throws (1: SomeException e, 99: UnauthorizedException ue);
 }
 ```
 
-As you see, difference beetween two services only in the first argument.
+As you see, difference beetween two services in the first argument and unauthorized exception as 99 field (I hope nobody needs more than 98 exceptions :) ).
 
 MessageTranslator can get thrift message from external service and transform it into internal service message.
 
@@ -50,13 +50,16 @@ repositories {
 ```
 
 ```
-compile 'ru.aatarasoff.thrift:api-gateway-core:0.1.1'
+compile 'ru.aatarasoff.thrift:api-gateway-core:0.2.0'
 ```
 
 ## How use this
 
 You need to create MessageTransalator and call process method. 
 Also you need implement AuthTokenExchanger interface.
+
+Message Translator is not thread safe. Remember that.
+If you have an exception while method process is called, you can process it with processError method.
 
 See tests for better understanding.
 

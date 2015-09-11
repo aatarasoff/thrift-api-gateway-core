@@ -4,11 +4,15 @@ exception SomeException {
     1: string code
 }
 
+exception UnauthorizedException {
+    1: string reason
+}
+
 service ExternalTestService {
     SomeReturnData getSomeData(
         1: AuthToken authData,
         2: RequestData requestData
-    ) throws (1: SomeException e);
+    ) throws (1: SomeException e, 99: UnauthorizedException ue);
 }
 
 service InternalTestService {

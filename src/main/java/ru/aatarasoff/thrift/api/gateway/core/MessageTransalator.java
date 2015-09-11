@@ -1,11 +1,10 @@
 package ru.aatarasoff.thrift.api.gateway.core;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TJSONProtocol;
-import org.apache.thrift.protocol.TProtocol;
-import org.apache.thrift.protocol.TProtocolFactory;
+import org.apache.thrift.protocol.*;
 import org.apache.thrift.transport.TMemoryInputTransport;
 
 import java.util.Arrays;
@@ -18,6 +17,9 @@ public class MessageTransalator {
 
     private TProtocolFactory protocolFactory;
     private AuthTokenExchanger authTokenExchanger;
+
+    private String methodName;
+    private int seqid;
 
     public MessageTransalator(TProtocolFactory protocolFactory, AuthTokenExchanger authTokenExchanger) {
         this.protocolFactory = protocolFactory;
@@ -35,13 +37,43 @@ public class MessageTransalator {
 
         int endPosition = findEndPosition(protocol);
 
-        return  ArrayUtils.addAll(
+        return ArrayUtils.addAll(
                 ArrayUtils.addAll(
                         getSkippedPart(protocol, startPosition),
                         serializeUserData(protocolFactory, userData)
                 ),
                 getAfterTokenPart(protocol, endPosition, thriftBody.length)
         );
+    }
+
+    public byte[] processError(TException exception) throws Exception {
+        TMemoryBufferWithLength memoryBuffer = new TMemoryBufferWithLength(1024);
+
+        TProtocol protocol = protocolFactory.getProtocol(memoryBuffer);
+
+        if (TApplicationException.class.equals(exception.getClass())) {
+            protocol.writeMessageBegin(new TMessage(this.methodName, TMessageType.EXCEPTION, this.seqid));
+
+            ((TApplicationException) exception).write(protocol);
+
+            protocol.writeMessageEnd();
+        } else {
+            TStruct errorStruct = new TStruct(this.methodName + "_result");
+            TField errorField = new TField("exception", TType.STRUCT, (short) 99);
+
+            protocol.writeMessageBegin(new TMessage(this.methodName, TMessageType.REPLY, this.seqid));
+            protocol.writeStructBegin(errorStruct);
+            protocol.writeFieldBegin(errorField);
+
+            exception.getClass().getMethod("write", TProtocol.class).invoke(exception, protocol);
+
+            protocol.writeFieldEnd();
+            protocol.writeFieldStop();
+            protocol.writeStructEnd();
+            protocol.writeMessageEnd();
+        }
+
+        return Arrays.copyOf(memoryBuffer.getArray(), memoryBuffer.length());
     }
 
     private TProtocol createProtocol(byte[] thriftBody) {
@@ -83,7 +115,9 @@ public class MessageTransalator {
     }
 
     private void skipMessageInfo(TProtocol protocol) throws TException {
-        protocol.readMessageBegin();
+        TMessage message = protocol.readMessageBegin();
+        this.methodName = message.name;
+        this.seqid = message.seqid;
     }
 
     private byte[] getAfterTokenPart(TProtocol protocol, int endPosition, int length) {
