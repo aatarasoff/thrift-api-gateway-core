@@ -6,7 +6,9 @@ import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.*;
 import org.apache.thrift.transport.TMemoryInputTransport;
+import org.apache.thrift.transport.TTransportException;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 
 /**
@@ -14,6 +16,11 @@ import java.util.Arrays;
  */
 public class MessageTransalator {
     private static final byte[] COLON = new byte[]{(byte)58};
+    private static final String ERROR_STRUCT_NAME = "result";
+    private static final String ERROR_FIELD_NAME = "exception";
+    private static final short ERROR_FIELD_POSITION = (short) 99;
+    private static final String WRITE_METHOD_NAME = "write";
+    private static final int MEMORY_BUFFER_LENGTH = 1024;
 
     private TProtocolFactory protocolFactory;
     private AuthTokenExchanger authTokenExchanger;
@@ -51,26 +58,20 @@ public class MessageTransalator {
 
         TProtocol protocol = protocolFactory.getProtocol(memoryBuffer);
 
-        if (TApplicationException.class.equals(exception.getClass())) {
-            protocol.writeMessageBegin(new TMessage(this.methodName, TMessageType.EXCEPTION, this.seqid));
-
-            ((TApplicationException) exception).write(protocol);
-
-            protocol.writeMessageEnd();
-        } else {
-            TStruct errorStruct = new TStruct(this.methodName + "_result");
-            TField errorField = new TField("exception", TType.STRUCT, (short) 99);
-
-            protocol.writeMessageBegin(new TMessage(this.methodName, TMessageType.REPLY, this.seqid));
-            protocol.writeStructBegin(errorStruct);
-            protocol.writeFieldBegin(errorField);
-
-            exception.getClass().getMethod("write", TProtocol.class).invoke(exception, protocol);
-
-            protocol.writeFieldEnd();
-            protocol.writeFieldStop();
-            protocol.writeStructEnd();
-            protocol.writeMessageEnd();
+        try {
+            throw exception;
+        } catch (TApplicationException e) {
+            writeTApplicationException(e, protocol);
+        } catch (TProtocolException e) {
+            writeTApplicationException(createApplicationException(e), protocol);
+        } catch (TTransportException e) {
+            writeTApplicationException(createApplicationException(e), protocol);
+        } catch (TException e) {
+            if (TException.class.equals(e.getClass())) {
+                writeTApplicationException(createApplicationException(e), protocol);
+            } else {
+                writeUserDefinedException(exception, protocol);
+            }
         }
 
         return Arrays.copyOf(memoryBuffer.getArray(), memoryBuffer.length());
@@ -86,7 +87,7 @@ public class MessageTransalator {
     }
 
     private byte[] serializeUserData(TProtocolFactory protocolFactory, TBase userData) throws TException {
-        TMemoryBufferWithLength memoryBuffer = new TMemoryBufferWithLength(1024);
+        TMemoryBufferWithLength memoryBuffer = new TMemoryBufferWithLength(MEMORY_BUFFER_LENGTH);
 
         TProtocol protocol = protocolFactory.getProtocol(memoryBuffer);
 
@@ -126,5 +127,31 @@ public class MessageTransalator {
 
     private byte[] getSkippedPart(TProtocol protocol, int startPosition) {
         return getAfterTokenPart(protocol, 0, startPosition);
+    }
+
+    private void writeTApplicationException(TApplicationException exception, TProtocol protocol) throws TException {
+        protocol.writeMessageBegin(new TMessage(this.methodName, TMessageType.EXCEPTION, this.seqid));
+        exception.write(protocol);
+        protocol.writeMessageEnd();
+    }
+
+    private TApplicationException createApplicationException(TException e) {
+        return new TApplicationException(TApplicationException.INTERNAL_ERROR, e.getMessage());
+    }
+
+    private void writeUserDefinedException(TException exception, TProtocol protocol) throws TException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+        TStruct errorStruct = new TStruct(ERROR_STRUCT_NAME);
+        TField errorField = new TField(ERROR_FIELD_NAME, TType.STRUCT, ERROR_FIELD_POSITION);
+
+        protocol.writeMessageBegin(new TMessage(this.methodName, TMessageType.REPLY, this.seqid));
+        protocol.writeStructBegin(errorStruct);
+        protocol.writeFieldBegin(errorField);
+
+        exception.getClass().getMethod(WRITE_METHOD_NAME, TProtocol.class).invoke(exception, protocol);
+
+        protocol.writeFieldEnd();
+        protocol.writeFieldStop();
+        protocol.writeStructEnd();
+        protocol.writeMessageEnd();
     }
 }
