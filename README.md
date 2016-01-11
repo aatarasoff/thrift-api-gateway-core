@@ -1,6 +1,6 @@
 # Thrift API Gateway Core
 
-[![Join the chat at https://gitter.im/aatarasoff/thrift-api-gateway-core](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/aatarasoff/thrift-api-gateway-core?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/aatarasoff/thrift-api-gateway-core](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/aatarasoff/thrift-api-gateway-core?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/aatarasoff/thrift-api-gateway-core.svg?branch=master)](https://travis-ci.org/aatarasoff/thrift-api-gateway-core)
 
 Sometimes you need to do gateway for your API.
 This project provides core functionality for this.
