@@ -5,7 +5,7 @@
 Sometimes you need to do gateway for your API.
 This project provides core functionality for this.
 
-## What is it
+## What it is about
 
 Imagine that you have a thrift service like this:
 
@@ -37,7 +37,7 @@ As you see, difference beetween two services in the first argument and unauthori
 
 MessageTranslator can get thrift message from external service and transform it into internal service message.
 
-## How connect project
+## How to connect the project
 
 Its very simple:
 
@@ -51,7 +51,7 @@ repositories {
 compile 'ru.aatarasoff.thrift:api-gateway-core:0.2.1'
 ```
 
-## How use this
+## How to use this
 
 You need to create MessageTransalator and call process method. 
 Also you need implement AuthTokenExchanger interface.
